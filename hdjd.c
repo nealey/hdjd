@@ -21,7 +21,6 @@
 int
 main(int argc, char **argv)
 {
-    struct libusb_version *version;
     struct libusb_device_handle *handle;
     int             ret;
 
@@ -56,7 +55,6 @@ main(int argc, char **argv)
             printf("%02x %02x %02x\n", data[i], data[i + 1], data[i + 2]);
         }
     }
-    while (0);
 
     if (ret < 0) {
         printf("ERROR: %s\n", libusb_error_name(ret));
