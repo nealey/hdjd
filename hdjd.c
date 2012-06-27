@@ -35,7 +35,7 @@ main(int argc, char **argv)
     }
 
     while (1) {
-        uint8_t         data[12];
+        uint8_t         data[80];
         int             transferred;
         int             i;
 
@@ -45,15 +45,10 @@ main(int argc, char **argv)
             break;
         }
 
-        if (transferred % 3 > 0) {
-            fprintf(stderr, "WARNING: ignoring packet of length %d\n",
-                    transferred);
-            continue;
+        for (i = 0; i < transferred; i += 1) {
+            printf("%02x ", data[i]);
         }
-
-        for (i = 0; i < transferred; i += 3) {
-            printf("%02x %02x %02x\n", data[i], data[i + 1], data[i + 2]);
-        }
+        printf("\n");
     }
 
     if (ret < 0) {
