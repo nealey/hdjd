@@ -34,6 +34,14 @@ main(int argc, char **argv)
         return 69;
     }
 
+    /* Make Deck A cue button flash. */
+    {
+        int transferred;
+
+        uint8_t cmd[] = { 0x90, 0x3e, 0x7f };
+        libusb_bulk_transfer(handle, 0x03, cmd, 3, &transferred, 0);
+    }
+
     while (1) {
         uint8_t         data[80];
         int             transferred;
@@ -49,6 +57,14 @@ main(int argc, char **argv)
             printf("%02x ", data[i]);
         }
         printf("\n");
+
+        /* Cram it right back out */
+
+        if ((ret = libusb_bulk_transfer(handle, 0x03,
+                                        data, transferred,
+                                        &transferred, 0))) {
+            break;
+        }
     }
 
     if (ret < 0) {
