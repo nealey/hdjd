@@ -61,11 +61,9 @@ GetAACTrack(mp4ff_t *infile)
     return -1;
 }
 
-
 int
-main(int argc, char *argv[])
+play_file(snd_pcm_t *snd, FILE *f)
 {
-    snd_pcm_t *snd;
 
     int track;
 
@@ -84,20 +82,13 @@ main(int argc, char *argv[])
     long sampleId, numSamples;
     void *sample_buffer;
 
-    if (snd_pcm_open(&snd, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
-        fprintf(stderr, "Opening ALSA\n");
-        return 1;
-    }
-    
-
-
     mp4cb.read = read_callback;
     mp4cb.seek = seek_callback;
-    mp4cb.user_data = stdin;
+    mp4cb.user_data = f;
 
     infile = mp4ff_open_read(&mp4cb);
     if (! infile) {
-        fprintf(stderr, "Opening stdin fail\n");
+        fprintf(stderr, "Unable to open stream\n");
         return 1;
     }
 
@@ -129,8 +120,6 @@ main(int argc, char *argv[])
         fprintf(stderr, "Set ALSA params\n");
         return 1;
     }
-    DUMP_d(channels);
-    DUMP_d(samplerate);
 
     if (buffer) {
         free(buffer);
@@ -163,3 +152,42 @@ main(int argc, char *argv[])
 
     return 0;
 }
+
+int
+main(int argc, char *argv[])
+{
+    int i;
+    snd_pcm_t *snd;
+
+    if (snd_pcm_open(&snd, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
+        fprintf(stderr, "Opening ALSA\n");
+        return 1;
+    }
+
+    if (argc == 1) {
+        return play_file(snd, stdin);
+    }
+
+    for (i = 1; i < argc; i += 1) {
+        char *fn = argv[i];
+        FILE *f = fopen(fn, "r");
+
+        if ((fn[0] == '-') && (fn[1] == 0)) {
+            f = stdin;
+            fn = "[stdin]";
+        }
+
+        if (! f) {
+            fprintf(stderr, "Opening %s: %m\n", fn);
+            continue;
+        }
+
+        printf("%s\n", fn);
+
+        play_file(snd, f);
+        fclose(f);
+    }
+
+    return 0;
+}
+    
