@@ -17,61 +17,53 @@
 #define DUMP_c(v) DUMPf("%s = '%c' (0x%02x)", #v, v, v)
 #define DUMP_p(v) DUMPf("%s = %p", #v, v)
 
+// Steel: 0xb102, 0x83, 0x03
+// MP3e2: 0x0b105, 0x82, 
+// 4set: 0xb10c, 0x84, 0x02
+
 
 int
 main(int argc, char **argv)
 {
-    struct libusb_device_handle *handle;
-    int             ret;
+	struct libusb_device_handle *handle;
+	int ret;
 
-    if (libusb_init(NULL) < 0) {
-        return 69;
-    }
+	if (libusb_init(NULL) < 0) {
+		return 69;
+	}
 
-    handle = libusb_open_device_with_vid_pid(NULL, 0x06f8, 0xb105);     // MP3e2
-    if (!handle) {
-        printf("Couldn't find an MP3e2\n");
-        return 69;
-    }
+	handle = libusb_open_device_with_vid_pid(NULL, 0x06f8, 0xb102);
+	if (!handle) {
+		printf("Couldn't find a controller\n");
+		return 69;
+	}
 
-    /* Make Deck A cue button flash. */
-    {
-        int transferred;
+	while (1) {
+		uint8_t data[80];
+		int transferred;
+		int i;
 
-        uint8_t cmd[] = { 0x90, 0x3e, 0x7f };
-        libusb_bulk_transfer(handle, 0x03, cmd, 3, &transferred, 0);
-    }
+		if ((ret = libusb_bulk_transfer(handle, 0x83, data, sizeof data, &transferred, 0))) {
+			break;
+		}
 
-    while (1) {
-        uint8_t         data[80];
-        int             transferred;
-        int             i;
+		for (i = 0; i < transferred; i += 1) {
+			printf("%02x ", data[i]);
+		}
+		printf("\n");
 
-        if ((ret = libusb_bulk_transfer(handle, 0x82,
-                                        data, sizeof data,
-                                        &transferred, 0))) {
-            break;
-        }
+		// Cram it back out, to turn that light on
+		if ((ret = libusb_bulk_transfer(handle, 0x04, data, transferred, &transferred, 0))) {
+			break;
+		}
 
-        for (i = 0; i < transferred; i += 1) {
-            printf("%02x ", data[i]);
-        }
-        printf("\n");
+	}
 
-        /* Cram it right back out */
+	if (ret < 0) {
+		printf("ERROR: %s\n", libusb_error_name(ret));
+	}
 
-        if ((ret = libusb_bulk_transfer(handle, 0x03,
-                                        data, transferred,
-                                        &transferred, 0))) {
-            break;
-        }
-    }
+	libusb_exit(NULL);
 
-    if (ret < 0) {
-        printf("ERROR: %s\n", libusb_error_name(ret));
-    }
-
-    libusb_exit(NULL);
-
-    return 0;
+	return 0;
 }

@@ -6,4 +6,8 @@ hdjd: LDFLAGS += $(shell pkg-config --libs libusb-1.0)
 
 aac123: CFLAGS += $(shell pkg-config --cflags alsa)
 aac123: LDLIBS += $(shell pkg-config --libs alsa)
-aac123: LDLIBS += -lfaad -lmp4ff
+aac123: LDLIBS += -lfaad -lmp4v2
+
+aactest: CFLAGS += $(shell pkg-config --cflags alsa)
+aactest: LDLIBS += $(shell pkg-config --libs alsa)
+aactest: LDLIBS += -lfaad -lmp4v2

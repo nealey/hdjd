@@ -3,7 +3,7 @@
 
 #include <alsa/asoundlib.h>
 #include <neaacdec.h>
-#include <mp4ff.h>
+#include <mp4v2/mp4v2.h>
 
 /* Some things I use for debugging */
 #ifdef NODUMP
@@ -19,41 +19,36 @@
 #define DUMP_p(v) DUMPf("%s = %p", #v, v)
 
 
-uint32_t
-read_callback(void *user_data, void *buffer, uint32_t length)
-{
-    return fread(buffer, 1, length, (FILE*)user_data);
-}
-        
-uint32_t
-seek_callback(void *user_data, uint64_t position)
-{
-    return fseek((FILE*)user_data, position, SEEK_SET);
-}
-
 static int
-GetAACTrack(mp4ff_t *infile)
+GetAACTrack(MP4FileHandle *infile)
 {
     /* find AAC track */
-    int i, rc;
-    int numTracks = mp4ff_total_tracks(infile);
+    int rc;
+    MP4TrackId numTracks = MP4GetNumberOfTracks(infile, NULL, 0);
+    MP4TrackId i;
 
-    for (i = 0; i < numTracks; i++)
+    for (i = 1; i <= numTracks; i++)
     {
-        unsigned char *buff = NULL;
-        int buff_size = 0;
-        mp4AudioSpecificConfig mp4ASC;
+        uint8_t obj_type;
+        const char *track_type = MP4GetTrackType(infile, i);
 
-        mp4ff_get_decoder_config(infile, i, &buff, &buff_size);
+        if (! track_type) continue;
 
-        if (buff)
-        {
-            rc = NeAACDecAudioSpecificConfig(buff, buff_size, &mp4ASC);
-            free(buff);
+        if (!MP4_IS_AUDIO_TRACK_TYPE(track_type)) continue;
 
-            if (rc < 0)
-                continue;
-            return i;
+        /* MP4GetTrackAudioType */
+        obj_type = MP4GetTrackEsdsObjectTypeId(infile, i);
+        if (obj_type == MP4_INVALID_AUDIO_TYPE)
+            continue;
+     
+        if (obj_type == MP4_MPEG4_AUDIO_TYPE) {
+            obj_type = MP4GetTrackAudioMpeg4Type(infile, i);
+
+            if (MP4_IS_MPEG4_AAC_AUDIO_TYPE(obj_type))
+                return i;
+        } else { 
+            if (MP4_IS_AAC_AUDIO_TYPE(obj_type))
+                return i;
         }
     }
 
@@ -62,13 +57,12 @@ GetAACTrack(mp4ff_t *infile)
 }
 
 int
-play_file(snd_pcm_t *snd, FILE *f)
+play_file(snd_pcm_t *snd, char *fn)
 {
 
     int track;
 
-    mp4ff_t *infile;
-    mp4ff_callback_t mp4cb;
+    MP4FileHandle infile;
 
     NeAACDecHandle hDecoder;
     NeAACDecConfigurationPtr config;
@@ -82,11 +76,7 @@ play_file(snd_pcm_t *snd, FILE *f)
     long sampleId, numSamples;
     void *sample_buffer;
 
-    mp4cb.read = read_callback;
-    mp4cb.seek = seek_callback;
-    mp4cb.user_data = f;
-
-    infile = mp4ff_open_read(&mp4cb);
+    infile = MP4Read(fn);
     if (! infile) {
         fprintf(stderr, "Unable to open stream\n");
         return 1;
@@ -100,11 +90,13 @@ play_file(snd_pcm_t *snd, FILE *f)
     hDecoder = NeAACDecOpen();
     config = NeAACDecGetCurrentConfiguration(hDecoder);
     config->outputFormat = FAAD_FMT_16BIT;
+    config->downMatrix = 1;
+    config->defObjectType = LC;
     NeAACDecSetConfiguration(hDecoder, config);
 
     buffer = NULL;
     buffer_size = 0;
-    mp4ff_get_decoder_config(infile, track, &buffer, &buffer_size);
+    MP4GetTrackESConfiguration(infile, track, &buffer, &buffer_size);
 
     if (NeAACDecInit2(hDecoder, buffer, buffer_size, &samplerate, &channels) < 0) {
         fprintf(stderr, "Initializing decoder\n");
@@ -125,9 +117,12 @@ play_file(snd_pcm_t *snd, FILE *f)
         free(buffer);
     }
 
-    numSamples = mp4ff_num_samples(infile, track);
+    DUMP_d(MP4GetTrackMaxSampleSize(infile, track));
 
-    for (sampleId = 0; sampleId < numSamples; sampleId++) {
+    numSamples = MP4GetTrackNumberOfSamples(infile, track);
+
+    DUMP_d(numSamples);
+    for (sampleId = 1; sampleId <= numSamples; sampleId++) {
         int rc;
         long dur;
         unsigned int sample_count;
@@ -137,8 +132,7 @@ play_file(snd_pcm_t *snd, FILE *f)
         buffer = NULL;
         buffer_size = 0;
 
-        dur = mp4ff_get_sample_duration(infile, track, sampleId);
-        rc = mp4ff_read_sample(infile, track, sampleId, &buffer, &buffer_size);
+        rc = MP4ReadSample(infile, track, sampleId, &buffer, &buffer_size, NULL, NULL, NULL, NULL);
         if (rc == 0) {
             fprintf(stderr, "Read failed\n");
             return 1;
@@ -164,28 +158,12 @@ main(int argc, char *argv[])
         return 1;
     }
 
-    if (argc == 1) {
-        return play_file(snd, stdin);
-    }
-
     for (i = 1; i < argc; i += 1) {
         char *fn = argv[i];
-        FILE *f = fopen(fn, "r");
-
-        if ((fn[0] == '-') && (fn[1] == 0)) {
-            f = stdin;
-            fn = "[stdin]";
-        }
-
-        if (! f) {
-            fprintf(stderr, "Opening %s: %m\n", fn);
-            continue;
-        }
 
         printf("%s\n", fn);
 
-        play_file(snd, f);
-        fclose(f);
+        play_file(snd, fn);
     }
 
     return 0;
