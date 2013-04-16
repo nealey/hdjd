@@ -98,7 +98,7 @@ main(int argc, char **argv)
 		int i;
 		snd_seq_event_t ev;
 
-		if ((ret = libusb_bulk_transfer(dev, 0x83, data, sizeof data, &transferred, 0))) {
+		if ((ret = libusb_bulk_transfer(dev, d->ep_in, data, sizeof data, &transferred, 0))) {
 			break;
 		}
 
