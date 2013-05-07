@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <libusb.h>
+#include <sys/select.h>
 #include <alsa/asoundlib.h>
+#include "dump.h"
 
 /*
  * Some things I use for debugging 
@@ -25,22 +27,58 @@ struct device {
 };
 
 const struct device devices[] = {
-	{ 0xb102, 0x83, 0x04 },
-	{ 0xb105, 0x82, 0x03 },
+	{ 0xb102, 0x83, 0x04 }, // Steel
+	{ 0xb105, 0x82, 0x03 }, // MP3e2
 	{ 0, 0, 0 }
 };
 
+// Handle to ALSA sequencer
+static snd_seq_t *handle;
+
+// Descriptor of our fake handle
+int seq_port;
+
+void
+midi_send(uint8_t *data, size_t datalen)
+{
+	snd_seq_event_t ev;
+	snd_midi_event_t *midi_event_parser;
+
+	snd_midi_event_new(datalen, &midi_event_parser);
+	
+	snd_midi_event_encode(midi_event_parser, data, datalen, &ev);
+	snd_seq_ev_set_direct(&ev);
+	snd_seq_ev_set_source(&ev, seq_port);
+	snd_seq_ev_set_subs(&ev);
+	snd_seq_event_output(handle, &ev);	
+	snd_seq_drain_output(handle);
+	
+	snd_midi_event_free(midi_event_parser);
+}
+
+void
+usb_xfer_done(struct libusb_transfer *transfer)
+{
+	uint8_t *data = transfer->buffer;
+	int datalen = transfer->actual_length;
+	int i;
+	
+	for (i = 0; i < datalen; i += 1) {
+		printf("%02x ", data[i]);
+	}
+	printf("\n");
+	
+	midi_send(data, datalen);
+}
 
 int
 main(int argc, char **argv)
 {
-	static snd_seq_t *handle;
 	struct libusb_device_handle *dev;
 	struct libusb_device_descriptor ddesc;
 	char name[100];
 	const struct device *d;
-	snd_midi_event_t *midi_event_parser;
-	int seq_port;
+	nfds_t nfds = 0;
 	int ret;
 
 	if (libusb_init(NULL) < 0) {
@@ -78,6 +116,7 @@ main(int argc, char **argv)
 	}
 	printf("Opened a %s\n", name);
 
+	// Initialize ALSA
 	if (snd_seq_open(&handle, "default", SND_SEQ_OPEN_DUPLEX, 0) < 0) {
 		perror("snd_seq_open");
 		return(69);
@@ -90,29 +129,64 @@ main(int argc, char **argv)
 					      SND_SEQ_PORT_CAP_SUBS_READ |
 					      SND_SEQ_PORT_CAP_SUBS_WRITE,
 					      SND_SEQ_PORT_TYPE_MIDI_GENERIC);
-	snd_midi_event_new(256, &midi_event_parser);
 
 	while (1) {
+		struct libusb_transfer *xfer = libusb_alloc_transfer(0);
 		uint8_t data[80];
 		int transferred;
 		int i;
-		snd_seq_event_t ev;
 
 		if ((ret = libusb_bulk_transfer(dev, d->ep_in, data, sizeof data, &transferred, 0))) {
 			break;
 		}
 
-		for (i = 0; i < transferred; i += 1) {
-			printf("%02x ", data[i]);
+		// Set up transfer
+		libusb_fill_bulk_transfer(xfer, dev, d->ep_in, data, sizeof data, usb_xfer_done, NULL, 0);
+		libusb_submit_transfer(xfer);
+			
+		// Select on our file descriptors
+		{
+			const struct libusb_pollfd **usb_fds = libusb_get_pollfds(NULL);
+			struct timeval tv;
+			struct timeval *timeout;
+			fd_set rfds, wfds;
+			int nfds = 0;
+			
+			ret = libusb_get_next_timeout(NULL, &tv);
+			if (0 == ret) {
+				timeout = NULL;
+			} else {
+				timeout = &tv;
+			}
+			
+			FD_ZERO(&rfds);
+			FD_ZERO(&wfds);
+			for (i = 0; usb_fds[i]; i += 1) {
+				const struct libusb_pollfd *ufd = usb_fds[i];
+	
+				if (ufd->fd > nfds) {
+					nfds = ufd->fd;
+				}
+				if (ufd->events & POLLIN) {
+					FD_SET(ufd->fd, &rfds);
+				}
+				if (ufd->events & POLLOUT) {
+					FD_SET(ufd->fd, &wfds);
+				}
+			}
+			
+			ret = select(nfds + 1, &rfds, &wfds, NULL, timeout);
+			
+			for (i = 0; usb_fds[i]; i += 1) {
+				int fd = usb_fds[i]->fd;
+				
+				if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds)) {
+					libusb_handle_events(NULL);
+				}
+			}
 		}
 		
-		snd_midi_event_encode(midi_event_parser, data, transferred, &ev);
-		snd_seq_ev_set_direct(&ev);
-		snd_seq_ev_set_source(&ev, seq_port);
-		snd_seq_ev_set_subs(&ev);
-		snd_seq_event_output(handle, &ev);	
-		printf("\n");
-		snd_seq_drain_output(handle);
+		libusb_free_transfer(xfer);
 	}
 
 	if (ret < 0) {
