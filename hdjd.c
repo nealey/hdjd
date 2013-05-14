@@ -71,6 +71,30 @@ usb_xfer_done(struct libusb_transfer *transfer)
 	midi_send(data, datalen);
 }
 
+void
+handle_alsa()
+{
+	snd_midi_event_t *midi_event_parser;
+	snd_seq_event_t *ev;
+	int ret = 1;
+
+	for (ret = 1; ret > 0; ) {
+		char buf[512];
+		long converted;
+		int i;
+		
+		ret = snd_seq_event_input(handle, &ev);
+		snd_midi_event_new(512, &midi_event_parser);
+		converted = snd_midi_event_decode(midi_event_parser, buf, 512, ev);
+		printf(" << ");
+		for (i = 0; i < converted; i += 1) {
+			printf("%02x ", buf[i]);
+		}
+		printf("\n");
+		snd_midi_event_free(midi_event_parser);
+	}	
+}
+
 int
 main(int argc, char **argv)
 {
@@ -147,31 +171,55 @@ main(int argc, char **argv)
 		// Select on our file descriptors
 		{
 			const struct libusb_pollfd **usb_fds = libusb_get_pollfds(NULL);
+			struct pollfd *pfd;
+			int npfd;
 			struct timeval tv;
 			struct timeval *timeout;
 			fd_set rfds, wfds;
 			int nfds = 0;
 			
-			ret = libusb_get_next_timeout(NULL, &tv);
-			if (0 == ret) {
-				timeout = NULL;
-			} else {
-				timeout = &tv;
-			}
-			
 			FD_ZERO(&rfds);
 			FD_ZERO(&wfds);
-			for (i = 0; usb_fds[i]; i += 1) {
-				const struct libusb_pollfd *ufd = usb_fds[i];
+			
+			// ALSA shit
+			{
+				
+				npfd = snd_seq_poll_descriptors_count(handle, POLLIN);
+				pfd = (struct pollfd *)alloca(npfd * sizeof(struct pollfd));
+				snd_seq_poll_descriptors(handle, pfd, npfd, POLLIN);
+				
+				for (i = 0; i < npfd; i += 1) {
+					if (pfd[i].fd > nfds) {
+						nfds = pfd[i].fd;
+					}
+					if (pfd[i].events & POLLIN) {
+						FD_SET(pfd[i].fd, &rfds);
+					}
+				}
+			}
+			
+			// USB shit
+			{
 	
-				if (ufd->fd > nfds) {
-					nfds = ufd->fd;
+				ret = libusb_get_next_timeout(NULL, &tv);
+				if (0 == ret) {
+					timeout = NULL;
+				} else {
+					timeout = &tv;
 				}
-				if (ufd->events & POLLIN) {
-					FD_SET(ufd->fd, &rfds);
-				}
-				if (ufd->events & POLLOUT) {
-					FD_SET(ufd->fd, &wfds);
+				
+				for (i = 0; usb_fds[i]; i += 1) {
+					const struct libusb_pollfd *ufd = usb_fds[i];
+		
+					if (ufd->fd > nfds) {
+						nfds = ufd->fd;
+					}
+					if (ufd->events & POLLIN) {
+						FD_SET(ufd->fd, &rfds);
+					}
+					if (ufd->events & POLLOUT) {
+						FD_SET(ufd->fd, &wfds);
+					}
 				}
 			}
 			
@@ -182,6 +230,14 @@ main(int argc, char **argv)
 				
 				if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds)) {
 					libusb_handle_events(NULL);
+				}
+			}
+			
+			for (i = 0; i < npfd; i += 1) {
+				int fd = pfd[i].fd;
+				
+				if (FD_ISSET(fd, &rfds)) {
+					handle_alsa();
 				}
 			}
 		}
