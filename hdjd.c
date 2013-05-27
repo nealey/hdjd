@@ -74,25 +74,31 @@ usb_xfer_done(struct libusb_transfer *transfer)
 void
 handle_alsa()
 {
-	snd_midi_event_t *midi_event_parser;
+	static snd_midi_event_t *midi_event_parser = NULL;
 	snd_seq_event_t *ev;
 	int ret = 1;
 
-	for (ret = 1; ret > 0; ) {
-		char buf[512];
+DUMP();
+	for (;;) {
+		char buf[256];
 		long converted;
 		int i;
 		
-		ret = snd_seq_event_input(handle, &ev);
-		snd_midi_event_new(512, &midi_event_parser);
-		converted = snd_midi_event_decode(midi_event_parser, buf, 512, ev);
+		if (snd_seq_event_input(handle, &ev) < 0) {
+			break;
+		}
+		if (! midi_event_parser) {
+			if (snd_midi_event_new(256, &midi_event_parser) < 0) {
+				continue;
+			}
+		}
+		converted = snd_midi_event_decode(midi_event_parser, buf, 256, ev);
 		printf(" << ");
 		for (i = 0; i < converted; i += 1) {
 			printf("%02x ", buf[i]);
 		}
-		printf("\n");
-		snd_midi_event_free(midi_event_parser);
-	}	
+		printf(":\n");
+	}
 }
 
 int
@@ -224,6 +230,7 @@ main(int argc, char **argv)
 			}
 			
 			ret = select(nfds + 1, &rfds, &wfds, NULL, timeout);
+			DUMP_d(rfds);
 			
 			for (i = 0; usb_fds[i]; i += 1) {
 				int fd = usb_fds[i]->fd;
