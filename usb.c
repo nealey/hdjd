@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <poll.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/select.h>
+#include "usb.h"
 #include "dump.h"
 
 static struct libusb_device_handle *usb_dev;
@@ -48,9 +50,14 @@ usb_xfer_done(struct libusb_transfer *transfer)
 }
 
 int
-usb_setup(char *name, size_t namelen)
+usb_setup(const char *name, size_t namelen)
 {
 	if (libusb_init(NULL) < 0) {
+		return -1;
+	}
+	
+	if (libusb_pollfds_handle_timeouts(NULL) == 0) {
+		printf("I'm too dumb to handle events on such an old system.\n");
 		return -1;
 	}
 	
@@ -69,12 +76,16 @@ usb_setup(char *name, size_t namelen)
 	{
 		int ret;
 		struct libusb_device_descriptor ddesc;
-		char *p = name;
+		char name_[200];
+		char *p = name_;
+		
+		strncpy(name_, name, sizeof(name_) - 1);
+		name_[sizeof(name_) - 1] = 0;
 		
 		libusb_get_device_descriptor(libusb_get_device(usb_dev), &ddesc);
 		ret = libusb_get_string_descriptor_ascii(usb_dev, ddesc.iManufacturer, (unsigned char *)name, namelen);
 		if (ret > 0) {
-			p = name + ret;
+			p = name_ + ret;
 			*p = ' ';
 			p += 1;
 			ret = libusb_get_string_descriptor_ascii(usb_dev, ddesc.iProduct, (unsigned char *)p, namelen - ret - 1);
@@ -109,13 +120,22 @@ usb_fd_setup(int *nfds, fd_set *rfds, fd_set *wfds)
 			FD_SET(ufd->fd, wfds);
 		}
 	}
-	
 
 	usb_initiate_transfer();
 }
 
-void
-usb_read_ready()
+void 
+usb_check_fds(fd_set *rfds, fd_set *wfds)
 {
-	libusb_handle_events(NULL);
+	const struct libusb_pollfd **usb_fds = libusb_get_pollfds(NULL);
+	int i;
+	
+	for (i = 0; usb_fds[i]; i += 1) {
+		int fd = usb_fds[i]->fd;
+
+		if (FD_ISSET(fd, rfds) || FD_ISSET(fd, wfds)) {
+			libusb_handle_events(NULL);
+			return;
+		}
+	}
 }

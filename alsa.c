@@ -2,11 +2,13 @@
 #include <poll.h>
 #include <sys/select.h>
 #include <alsa/asoundlib.h>
+#include "alsa.h"
 #include "dump.h"
 
 static snd_seq_t *snd_handle;
 static int seq_port;
 static snd_midi_event_t *midi_event_parser;
+static snd_seq_event_t *ev;
 
 int
 alsa_setup(const char *name)
@@ -22,11 +24,8 @@ alsa_setup(const char *name)
 				       SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_READ |
 				       SND_SEQ_PORT_CAP_SUBS_WRITE, SND_SEQ_PORT_TYPE_MIDI_GENERIC);
 
-	if (snd_seq_event_input(handle, &ev) < 0) {
-		return -1;
-	}
-
 	if (snd_midi_event_new(256, &midi_event_parser) < 0) {
+		perror("snd_midi_event_new");
 		return -1;
 	}
 
@@ -63,15 +62,12 @@ alsa_fd_setup(int *nfds, fd_set *rfds, fd_set *wfds)
 void
 alsa_read_ready()
 {
-	snd_seq_event_t *ev;
-	int ret = 1;
-
 	for (;;) {
-		char buf[256];
+		unsigned char buf[256];
 		long converted;
 		int i;
 
-		if (snd_seq_event_input(handle, &ev) < 0) {
+		if (snd_seq_event_input(snd_handle, &ev) < 0) {
 			break;
 		}
 		if (!midi_event_parser) {
@@ -94,9 +90,9 @@ alsa_check_fds(fd_set *rfds, fd_set *wfds)
 	int i;
 	
 	for (i = 0; i < npfd; i += 1) {
-		int fd = pfds[i]->fd;
+		int fd = pfd[i].fd;
 
-		if (FD_ISSET(fd, &rfds) || FD_ISSET(fd, &wfds)) {
+		if (FD_ISSET(fd, rfds) || FD_ISSET(fd, wfds)) {
 			alsa_read_ready();
 			return;
 		}

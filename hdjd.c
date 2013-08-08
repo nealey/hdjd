@@ -44,8 +44,11 @@ main(int argc, char *argv[])
 		if (-1 == ret) {
 			DUMP();
 		}
+		
+		alsa_check_fds(&rfds, &wfds);
+		usb_check_fds(&rfds, &wfds);
 
-		DUMP();
+		//DUMP();
 	}
 
 	return 0;
