@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/select.h>
 #include "usb.h"
+#include "alsa.h"
 #include "dump.h"
 
 static struct libusb_device_handle *usb_dev;
@@ -30,6 +31,7 @@ static void
 usb_initiate_transfer()
 {
 	// Tell libusb we want to know about bulk transfers
+	xfer = libusb_alloc_transfer(0);
 	libusb_fill_bulk_transfer(xfer, usb_dev, d->ep_in, data, sizeof(data), usb_xfer_done, NULL, 0);
 	libusb_submit_transfer(xfer);
 }
@@ -39,18 +41,14 @@ usb_xfer_done(struct libusb_transfer *transfer)
 {
 	uint8_t *data = transfer->buffer;
 	int datalen = transfer->actual_length;
-	int i;
 
-	for (i = 0; i < datalen; i += 1) {
-		printf("%02x ", data[i]);
-	}
-	printf("\n");
+	alsa_write(data, datalen);
 	
 	usb_initiate_transfer();
 }
 
 int
-usb_setup(const char *name, size_t namelen)
+usb_setup(char *name, size_t namelen)
 {
 	if (libusb_init(NULL) < 0) {
 		return -1;
@@ -76,16 +74,12 @@ usb_setup(const char *name, size_t namelen)
 	{
 		int ret;
 		struct libusb_device_descriptor ddesc;
-		char name_[200];
-		char *p = name_;
-		
-		strncpy(name_, name, sizeof(name_) - 1);
-		name_[sizeof(name_) - 1] = 0;
 		
 		libusb_get_device_descriptor(libusb_get_device(usb_dev), &ddesc);
 		ret = libusb_get_string_descriptor_ascii(usb_dev, ddesc.iManufacturer, (unsigned char *)name, namelen);
 		if (ret > 0) {
-			p = name_ + ret;
+			char *p = name + ret;
+			
 			*p = ' ';
 			p += 1;
 			ret = libusb_get_string_descriptor_ascii(usb_dev, ddesc.iProduct, (unsigned char *)p, namelen - ret - 1);
@@ -93,10 +87,9 @@ usb_setup(const char *name, size_t namelen)
 		if (ret < 0) {
 			printf("Warning: I can't figure out what to call this thing.\n");
 		}
-		printf("Opened a %s\n", name);
+		printf("Opened [%s]\n", name);
 	}
 	
-	xfer = libusb_alloc_transfer(0);
 
 	return 0;
 }
@@ -138,4 +131,16 @@ usb_check_fds(fd_set *rfds, fd_set *wfds)
 			return;
 		}
 	}
+}
+
+void
+usb_write(uint8_t *data, size_t datalen)
+{
+	int i;
+	
+	printf("U> ");
+	for (i = 0; i < datalen; i += 1) {
+		printf("%02x ", data[i]);
+	}
+	printf("\n");
 }

@@ -3,11 +3,11 @@
 #include <sys/select.h>
 #include <alsa/asoundlib.h>
 #include "alsa.h"
+#include "usb.h"
 #include "dump.h"
 
 static snd_seq_t *snd_handle;
 static int seq_port;
-static snd_midi_event_t *midi_event_parser;
 static snd_seq_event_t *ev;
 
 int
@@ -23,11 +23,6 @@ alsa_setup(const char *name)
 	    snd_seq_create_simple_port(snd_handle, name,
 				       SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_READ |
 				       SND_SEQ_PORT_CAP_SUBS_WRITE, SND_SEQ_PORT_TYPE_MIDI_GENERIC);
-
-	if (snd_midi_event_new(256, &midi_event_parser) < 0) {
-		perror("snd_midi_event_new");
-		return -1;
-	}
 
 	return 0;
 }
@@ -56,31 +51,36 @@ alsa_fd_setup(int *nfds, fd_set *rfds, fd_set *wfds)
 			FD_SET(pfd[i].fd, rfds);
 		}
 	}
+	
+
 }
 
+#define ALSA_BUFSIZE 4096
 
 void
 alsa_read_ready()
 {
+	static snd_midi_event_t *midi_event_parser;
+
+	if (snd_midi_event_new(ALSA_BUFSIZE, &midi_event_parser) < 0) {
+		fprintf(stderr, "ALSA cannot allocate MIDI event parser\n");
+		abort();
+	}
+
 	for (;;) {
-		unsigned char buf[256];
+		unsigned char buf[ALSA_BUFSIZE];
 		long converted;
-		int i;
 
 		if (snd_seq_event_input(snd_handle, &ev) < 0) {
 			break;
 		}
-		if (!midi_event_parser) {
-			if (snd_midi_event_new(256, &midi_event_parser) < 0) {
-				continue;
-			}
+
+		converted = snd_midi_event_decode(midi_event_parser, buf, ALSA_BUFSIZE, ev);
+		if (converted < 0) {
+			DUMP_l(converted);
+		} else {
+			usb_write(buf, converted);
 		}
-		converted = snd_midi_event_decode(midi_event_parser, buf, 256, ev);
-		printf(" << ");
-		for (i = 0; i < converted; i += 1) {
-			printf("%02x ", buf[i]);
-		}
-		printf(":\n");
 	}
 }
 
@@ -97,4 +97,31 @@ alsa_check_fds(fd_set *rfds, fd_set *wfds)
 			return;
 		}
 	}
+}
+
+void
+alsa_write(uint8_t *data, size_t datalen)
+{
+	static snd_midi_event_t *midi_event_parser;
+	snd_seq_event_t ev;
+	long r;
+
+	if (snd_midi_event_new(ALSA_BUFSIZE, &midi_event_parser) < 0) {
+		fprintf(stderr, "ALSA cannot allocate MIDI event parser\n");
+		abort();
+	}
+	
+	r = snd_midi_event_encode(midi_event_parser, data, datalen, &ev);
+	if (r < datalen) {
+		fprintf(stderr, "ALSA didn't parse that message\n");
+		abort();
+	}
+	
+	if ((r = snd_seq_event_output(snd_handle, &ev)) < 0) {
+		fprintf(stderr, "ALSA couldn't write an event: %ld\n", r);
+		abort();
+	}
+	
+	snd_seq_drain_output(snd_handle);
+	DUMP();
 }

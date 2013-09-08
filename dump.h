@@ -19,6 +19,7 @@
 #endif
 #define DUMP() DUMPf("")
 #define DUMP_d(v) DUMPf("%s = %d", #v, v)
+#define DUMP_l(v) DUMPf("%s = %ld", #v, v)
 #define DUMP_x(v) DUMPf("%s = 0x%x", #v, v)
 #define DUMP_s(v) DUMPf("%s = %s", #v, v)
 #define DUMP_c(v) DUMPf("%s = '%c' (0x%02x)", #v, v, v)

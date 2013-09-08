@@ -1,5 +1,6 @@
 CFLAGS += -Wall
 CFLAGS += -Werror
+CFLAGS += -g
 
 all: hdjd aac123
 
@@ -17,3 +18,6 @@ aac123: LDLIBS += -lfaad -lmp4v2
 aactest: CFLAGS += $(shell pkg-config --cflags alsa)
 aactest: LDLIBS += $(shell pkg-config --libs alsa)
 aactest: LDLIBS += -lfaad -lmp4v2
+
+clean:
+	rm -f hdjd *.o
