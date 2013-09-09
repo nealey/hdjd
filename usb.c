@@ -9,9 +9,7 @@
 #include "dump.h"
 
 static struct libusb_device_handle *usb_dev;
-static struct libusb_transfer *xfer = NULL;
 static const struct device *d;
-uint8_t data[80];
 
 struct device {
 	uint16_t product_id;
@@ -30,23 +28,26 @@ void usb_xfer_done(struct libusb_transfer *transfer);
 static void
 usb_initiate_transfer()
 {
+	unsigned char *buf;
+	
+	buf = (unsigned char *)malloc(256);
+	
 	// Tell libusb we want to know about bulk transfers
-	if (xfer) {
-		libusb_free_transfer(xfer);
-	}
-	xfer = libusb_alloc_transfer(0);
-	libusb_fill_bulk_transfer(xfer, usb_dev, d->ep_in, data, sizeof(data), usb_xfer_done, NULL, 0);
+	struct libusb_transfer *xfer = libusb_alloc_transfer(0);
+	libusb_fill_bulk_transfer(xfer, usb_dev, d->ep_in, buf, 256, usb_xfer_done, NULL, 0);
 	libusb_submit_transfer(xfer);
 }
 
 void
-usb_xfer_done(struct libusb_transfer *transfer)
+usb_xfer_done(struct libusb_transfer *xfer)
 {
-	uint8_t *data = transfer->buffer;
-	int datalen = transfer->actual_length;
+	uint8_t *data = xfer->buffer;
+	int datalen = xfer->actual_length;
 
 	alsa_write(data, datalen);
-	usb_initiate_transfer();
+	free(data);
+	libusb_free_transfer(xfer);
+ 	usb_initiate_transfer();
 }
 
 int
@@ -137,17 +138,21 @@ usb_check_fds(fd_set *rfds, fd_set *wfds)
 
 
 void
-usb_write_done(struct libusb_transfer *transfer)
+usb_write_done(struct libusb_transfer *xfer)
 {
-	libusb_free_transfer(transfer);
+	free(xfer->buffer);
+	libusb_free_transfer(xfer);
 }
 
 void
 usb_write(uint8_t *data, size_t datalen)
 {
 	struct libusb_transfer *xfer;
+	unsigned char *buf;
 	
 	xfer = libusb_alloc_transfer(0);
-	libusb_fill_bulk_transfer(xfer, usb_dev, d->ep_out, data, datalen, usb_write_done, NULL, 0);
+	buf = (unsigned char *)malloc(datalen);
+	memcpy(buf, data, datalen);
+	libusb_fill_bulk_transfer(xfer, usb_dev, d->ep_out, buf, datalen, usb_write_done, NULL, 0);
 	libusb_submit_transfer(xfer);
 }
