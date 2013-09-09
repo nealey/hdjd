@@ -2,11 +2,14 @@ CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -g
 
-all: hdjd aac123
+all: hdjd aac123 explore
 
 hdjd: LDFLAGS += $(shell pkg-config --libs libusb-1.0)
 hdjd: LDFLAGS += $(shell pkg-config --libs alsa)
 hdjd: hdjd.o usb.o alsa.o
+
+explore: LDFLAGS += $(shell pkg-config --libs libusb-1.0)
+explore.o: CFLAGS += $(shell pkg-config --cflags libusb-1.0)
 
 alsa.o: CFLAGS += $(shell pkg-config --cflags alsa)
 usb.o: CFLAGS += $(shell pkg-config --cflags libusb-1.0)
