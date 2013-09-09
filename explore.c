@@ -19,16 +19,17 @@
 #define DUMP_p(v) DUMPf("%s = %p", #v, v)
 
 struct device {
+	char *name;
 	uint16_t product_id;
 	uint8_t ep_in;
 	uint8_t ep_out;
 };
 
 const struct device devices[] = {
-	{0xb102, 0x83, 0x04},
-	{0xb105, 0x82, 0x03},
-	{0xb10c, 0x84, 0x02},
-	{0, 0, 0}
+	{"Steel", 0xb102, 0x83, 0x04},
+	{"MP3e2", 0xb105, 0x82, 0x03},
+	{"4Set", 0xb10c, 0x84, 0x02},
+	{0, 0, 0, 0}
 };
 
 
@@ -90,8 +91,12 @@ main(int argc, char **argv)
 		}
 		printf("\n");
 
-		//memset(data, 0xff, sizeof data);
-		libusb_bulk_transfer(dev, d->ep_out, data, sizeof data, &transferred, 0);
+		{
+			uint8_t data[16];
+			
+			memset(data, 0xff, sizeof data);
+			libusb_bulk_transfer(dev, d->ep_out, data, sizeof data, &transferred, 0);
+		}
 
 	}
 
