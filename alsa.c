@@ -126,14 +126,4 @@ alsa_write(uint8_t *data, size_t datalen)
 	}	
 	
 	snd_seq_drain_output(snd_handle);
-
-	{	
-	int i;
-	
-	printf("A> ");
-	for (i = 0; i < datalen; i += 1) {
-		printf("%02x ", data[i]);
-	}
-	printf("\n");
-	}
 }
