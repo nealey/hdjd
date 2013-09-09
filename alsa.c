@@ -116,12 +116,24 @@ alsa_write(uint8_t *data, size_t datalen)
 		fprintf(stderr, "ALSA didn't parse that message\n");
 		abort();
 	}
-	
+
+	snd_seq_ev_set_direct(&ev);
+	snd_seq_ev_set_source(&ev, seq_port);
+	snd_seq_ev_set_subs(&ev);
 	if ((r = snd_seq_event_output(snd_handle, &ev)) < 0) {
 		fprintf(stderr, "ALSA couldn't write an event: %ld\n", r);
 		abort();
-	}
+	}	
 	
 	snd_seq_drain_output(snd_handle);
-	DUMP();
+
+	{	
+	int i;
+	
+	printf("A> ");
+	for (i = 0; i < datalen; i += 1) {
+		printf("%02x ", data[i]);
+	}
+	printf("\n");
+	}
 }
