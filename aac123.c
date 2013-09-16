@@ -5,25 +5,13 @@
 #include <neaacdec.h>
 #include <mp4v2/mp4v2.h>
 
-/* Some things I use for debugging */
-#ifdef NODUMP
-#  define DUMPf(fmt, args...)
-#else
-#  define DUMPf(fmt, args...) fprintf(stderr, "%s:%s:%d " fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##args)
-#endif
-#define DUMP() DUMPf("")
-#define DUMP_d(v) DUMPf("%s = %d", #v, v)
-#define DUMP_x(v) DUMPf("%s = 0x%x", #v, v)
-#define DUMP_s(v) DUMPf("%s = %s", #v, v)
-#define DUMP_c(v) DUMPf("%s = '%c' (0x%02x)", #v, v, v)
-#define DUMP_p(v) DUMPf("%s = %p", #v, v)
+#include "dump.h"
 
 
 static int
 GetAACTrack(MP4FileHandle *infile)
 {
     /* find AAC track */
-    int rc;
     MP4TrackId numTracks = MP4GetNumberOfTracks(infile, NULL, 0);
     MP4TrackId i;
 
@@ -66,10 +54,9 @@ play_file(snd_pcm_t *snd, char *fn)
 
     NeAACDecHandle hDecoder;
     NeAACDecConfigurationPtr config;
-    mp4AudioSpecificConfig mp4ASC;
 
     unsigned char *buffer;
-    int buffer_size;
+    uint32_t buffer_size;
     unsigned long samplerate;
     unsigned char channels;
 
@@ -124,9 +111,7 @@ play_file(snd_pcm_t *snd, char *fn)
     DUMP_d(numSamples);
     for (sampleId = 1; sampleId <= numSamples; sampleId++) {
         int rc;
-        long dur;
         unsigned int sample_count;
-        unsigned int delay = 0;
         NeAACDecFrameInfo frameInfo;
 
         buffer = NULL;

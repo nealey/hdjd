@@ -82,6 +82,7 @@ alsa_read_ready()
 			usb_write(buf, converted);
 		}
 	}
+	snd_midi_event_free(midi_event_parser);
 }
 
 void
@@ -120,10 +121,10 @@ alsa_write(uint8_t *data, size_t datalen)
 	snd_seq_ev_set_direct(&ev);
 	snd_seq_ev_set_source(&ev, seq_port);
 	snd_seq_ev_set_subs(&ev);
-	if ((r = snd_seq_event_output(snd_handle, &ev)) < 0) {
+	if ((r = snd_seq_event_output_direct(snd_handle, &ev)) < 0) {
 		fprintf(stderr, "ALSA couldn't write an event: %ld\n", r);
 		abort();
 	}	
 	
-	snd_seq_drain_output(snd_handle);
+	snd_midi_event_free(midi_event_parser);
 }

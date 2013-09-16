@@ -1,8 +1,9 @@
 CFLAGS += -Wall
 CFLAGS += -Werror
+TARGETS = hdjd aac123 explore
 CFLAGS += -g
 
-all: hdjd aac123 explore
+all: $(TARGETS)
 
 hdjd: LDFLAGS += $(shell pkg-config --libs libusb-1.0)
 hdjd: LDFLAGS += $(shell pkg-config --libs alsa)
@@ -23,4 +24,4 @@ aactest: LDLIBS += $(shell pkg-config --libs alsa)
 aactest: LDLIBS += -lfaad -lmp4v2
 
 clean:
-	rm -f hdjd *.o
+	rm -f $(TARGETS) *.o

@@ -11,6 +11,9 @@
 static struct libusb_device_handle *usb_dev;
 static const struct device *d;
 
+static int writes_pending = 0;
+static int reads_pending = 0;
+
 struct device {
 	uint16_t product_id;
 	uint8_t ep_in;
@@ -36,6 +39,8 @@ usb_initiate_transfer()
 	struct libusb_transfer *xfer = libusb_alloc_transfer(0);
 	libusb_fill_bulk_transfer(xfer, usb_dev, d->ep_in, buf, 256, usb_xfer_done, NULL, 0);
 	libusb_submit_transfer(xfer);
+	DUMP();
+	reads_pending += 1;
 }
 
 void
@@ -43,7 +48,10 @@ usb_xfer_done(struct libusb_transfer *xfer)
 {
 	uint8_t *data = xfer->buffer;
 	int datalen = xfer->actual_length;
+	
+	reads_pending -= 1;
 
+	DUMP();
 	alsa_write(data, datalen);
 	free(data);
 	libusb_free_transfer(xfer);
@@ -54,7 +62,7 @@ int
 usb_setup(char *name, size_t namelen)
 {
 	if (libusb_init(NULL) < 0) {
-		return -1;
+		return -1; 
 	}
 	
 	if (libusb_pollfds_handle_timeouts(NULL) == 0) {
@@ -93,6 +101,7 @@ usb_setup(char *name, size_t namelen)
 		printf("Opened [%s]\n", name);
 	}
 	
+	usb_initiate_transfer();
 
 	return 0;
 }
@@ -117,7 +126,10 @@ usb_fd_setup(int *nfds, fd_set *rfds, fd_set *wfds)
 		}
 	}
 
-	usb_initiate_transfer();
+	if (reads_pending + writes_pending > 10) {
+		fprintf(stderr, "Warning: %d+%d = %d outstanding USB transactions!\n", reads_pending, writes_pending, reads_pending + writes_pending);
+	}
+
 }
 
 void 
@@ -140,6 +152,7 @@ usb_check_fds(fd_set *rfds, fd_set *wfds)
 void
 usb_write_done(struct libusb_transfer *xfer)
 {
+	writes_pending -= 1;
 	free(xfer->buffer);
 	libusb_free_transfer(xfer);
 }
@@ -150,6 +163,7 @@ usb_write(uint8_t *data, size_t datalen)
 	struct libusb_transfer *xfer;
 	unsigned char *buf;
 	
+	writes_pending += 1;
 	xfer = libusb_alloc_transfer(0);
 	buf = (unsigned char *)malloc(datalen);
 	memcpy(buf, data, datalen);
