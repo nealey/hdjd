@@ -77,7 +77,7 @@ alsa_read_ready()
 
 		converted = snd_midi_event_decode(midi_event_parser, buf, ALSA_BUFSIZE, ev);
 		if (converted < 0) {
-			DUMP_l(converted);
+			fprintf(stderr, "Can't decode MIDI event type %d\n", ev->type);
 		} else {
 			usb_write(buf, converted);
 		}

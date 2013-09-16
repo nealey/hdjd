@@ -39,7 +39,6 @@ usb_initiate_transfer()
 	struct libusb_transfer *xfer = libusb_alloc_transfer(0);
 	libusb_fill_bulk_transfer(xfer, usb_dev, d->ep_in, buf, 256, usb_xfer_done, NULL, 0);
 	libusb_submit_transfer(xfer);
-	DUMP();
 	reads_pending += 1;
 }
 
@@ -51,7 +50,6 @@ usb_xfer_done(struct libusb_transfer *xfer)
 	
 	reads_pending -= 1;
 
-	DUMP();
 	alsa_write(data, datalen);
 	free(data);
 	libusb_free_transfer(xfer);
