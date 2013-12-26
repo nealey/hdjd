@@ -5,11 +5,11 @@ CFLAGS += -g
 
 all: $(TARGETS)
 
-hdjd: LDFLAGS += $(shell pkg-config --libs libusb-1.0)
-hdjd: LDFLAGS += $(shell pkg-config --libs alsa)
+hdjd: LDLIBS += $(shell pkg-config --libs libusb-1.0)
+hdjd: LDLIBS += $(shell pkg-config --libs alsa)
 hdjd: hdjd.o usb.o alsa.o
 
-explore: LDFLAGS += $(shell pkg-config --libs libusb-1.0)
+explore: LDLIBS += $(shell pkg-config --libs libusb-1.0)
 explore.o: CFLAGS += $(shell pkg-config --cflags libusb-1.0)
 
 alsa.o: CFLAGS += $(shell pkg-config --cflags alsa)
