@@ -1,7 +1,7 @@
-Hercules DJ Controller Driver
+Hercules DJ Controller Driver for Linux
 =============================
 
-This is a userspace driver for some Hercules DJ controllers.
+This is a Linux userspace driver for some Hercules DJ controllers.
 
 Originally this was a part of Mixxx,
 but in order to issue more timely updates
