@@ -20,12 +20,18 @@ But please tell me if it crashes!
 Supported Controllers
 ---------------------
 
-* MP3e2
-* Steel
+* Hercules DJ Control MP3 e2
+* Hercules DJ Control Steel
 
 Support is planned for:
 
-* 4Set
+* Hercules DJ 4Set
+
+Things I won't support:
+
+* Hercules Console Mk2 (works with HID code in Mixxx)
+* Hercules DJ Control Instinct (works with Midi code in Mixxx)
+
 
 If you have a Hercules device that doesn't "just work" with Mixxx,
 send me an email, there's a good chance I can support it with this.
