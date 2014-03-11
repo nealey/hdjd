@@ -20,21 +20,26 @@ But please tell me if it crashes!
 Supported Controllers
 ---------------------
 
+The driver currently supports:
+
 * Hercules DJ Control MP3 e2
 * Hercules DJ Control Steel
 
 Support is planned for:
 
 * Hercules DJ 4Set
+* Hercules Console Mk4 (if I can find one cheap enough)
 
 Things I won't support:
 
-* Hercules Console Mk2 (works with HID code in Mixxx)
-* Hercules DJ Control Instinct (works with Midi code in Mixxx)
+* Hercules Console Mk2 (already works with HID code in Mixxx)
+* Hercules RMX (already works with HID code in Mixxx)
+* Hercules DJ Control Instinct (already works with Midi code in Mixxx,
+  although I *will* be contributing a mapping for it)
 
 
 If you have a Hercules device that doesn't "just work" with Mixxx,
-send me an email, there's a good chance I can support it with this.
+send me an email, there's a good chance I can support it with this driver.
 
 
 How To Run
