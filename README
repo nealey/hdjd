@@ -1,0 +1,59 @@
+Hercules DJ Controller Driver
+=============================
+
+This is a userspace driver for some Hercules DJ controllers.
+
+Originally this was a part of Mixxx,
+but in order to issue more timely updates
+(not bound to the Mixxx release schedule),
+it is now a standalone project.
+That means you can use it with any version of Mixxx,
+without needing to recompile anything other than this driver.
+
+Since it runs in userspace,
+you don't need to keep modifying your kernel to keep it working.
+And if the driver crashes,
+the rest of your system keeps running.
+But please tell me if it crashes!
+
+
+Supported Controllers
+---------------------
+
+* MP3e2
+* Steel
+
+
+How To Run
+----------
+
+Also make sure your user can read and write to raw USB devices.
+See [this Mixxx wiki page](http://mixxx.org/wiki/doku.php/hercules_dj_control_mp3_e2#usb_hid) for how to do this with udev-based systems (almost every Linux distribution).
+
+Currently, the driver must be started after you plug in a device.
+Just run `hdjd` and it will tell you what it found.
+
+
+Current Issues
+--------------
+
+The driver is pretty crappy right now.
+If you email me, I'm a lot more likely to fix things.
+Even if you just say "hi, I'm using your Hercules driver".
+
+* Driver must be launched after
+
+
+Thanks
+------
+
+Thanks to Guillemot (makers of the Hercules controllers) for sending me
+a whole bunch of controllers so I could make a better driver.
+
+Thanks to the Mixxx project for connecting me with Guillemot,
+and for providing something interesting to use this driver ;-)
+
+Contact Me
+----------
+
+Neale Pickett <neale@woozle.org>
