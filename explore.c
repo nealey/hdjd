@@ -78,7 +78,7 @@ main(int argc, char **argv)
 
 
 	while (1) {
-		uint8_t data[8];
+		uint8_t data[256];
 		int transferred;
 		int i;
 
