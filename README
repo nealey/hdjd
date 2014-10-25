@@ -27,11 +27,11 @@ The driver currently supports:
 
 Support is planned for:
 
-* Hercules DJ 4Set
 * Hercules Console Mk4 (if I can find one cheap enough)
 
 Things I won't support:
 
+* Hercules DJ 4Set (the one Guillemot sent me doesn't even work in Windows)
 * Hercules Console Mk2 (already works with HID code in Mixxx)
 * Hercules RMX (already works with HID code in Mixxx)
 * Hercules DJ Control Instinct (already works with Midi code in Mixxx,
