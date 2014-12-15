@@ -6,6 +6,7 @@
 #include <sys/select.h>
 #include "usb.h"
 #include "alsa.h"
+#include "log.h"
 #include "dump.h"
 
 static struct libusb_device_handle *usb_dev;
@@ -16,14 +17,15 @@ static int reads_pending = 0;
 
 struct device {
 	uint16_t product_id;
+	uint8_t interface_number;
 	uint8_t ep_in;
 	uint8_t ep_out;
 };
 
 const struct device devices[] = {
-	{ 0xb102, 0x83, 0x04 }, // Steel
-	{ 0xb105, 0x82, 0x03 }, // MP3e2
-	{ 0, 0, 0 }
+	{ 0xb102, 1, 0x83, 0x04 }, // Steel
+	{ 0xb105, 1, 0x82, 0x03 }, // MP3e2
+	{ 0, 0, 0, 0 }
 };
 
 void usb_xfer_done(struct libusb_transfer *transfer);
@@ -64,7 +66,7 @@ usb_setup(char *name, size_t namelen)
 	}
 	
 	if (libusb_pollfds_handle_timeouts(NULL) == 0) {
-		printf("I'm too dumb to handle events on such an old system.\n");
+		fatal("I'm too dumb to handle events on such an old system.");
 		return -1;
 	}
 	
@@ -75,8 +77,7 @@ usb_setup(char *name, size_t namelen)
 		}
 	}
 	if (! usb_dev) {
-		printf("Couldn't find a controller.\n");
-		return -1;
+		fatal("Couldn't find a controller.");
 	}
 	
 	// Figure out what it's called
@@ -94,10 +95,15 @@ usb_setup(char *name, size_t namelen)
 			ret = libusb_get_string_descriptor_ascii(usb_dev, ddesc.iProduct, (unsigned char *)p, namelen - ret - 1);
 		}
 		if (ret < 0) {
-			printf("Warning: I can't figure out what to call this thing.\n");
+			warn("I can't figure out what to call this thing.");
 		}
 		printf("Opened [%s]\n", name);
 	}
+
+	if (0 != libusb_claim_interface(usb_dev, d->interface_number)) {
+		fatal("Couldn't claim interface %d", d->interface_number);
+	}
+	
 	
 	usb_initiate_transfer();
 
@@ -125,7 +131,7 @@ usb_fd_setup(int *nfds, fd_set *rfds, fd_set *wfds)
 	}
 
 	if (reads_pending + writes_pending > 10) {
-		fprintf(stderr, "Warning: %d+%d = %d outstanding USB transactions!\n", reads_pending, writes_pending, reads_pending + writes_pending);
+		warn("%d(r)+%d(w) = %d outstanding USB transactions!", reads_pending, writes_pending, reads_pending + writes_pending);
 	}
 
 }
@@ -150,6 +156,7 @@ usb_check_fds(fd_set *rfds, fd_set *wfds)
 void
 usb_write_done(struct libusb_transfer *xfer)
 {
+	DUMP_d(xfer->status);
 	writes_pending -= 1;
 	free(xfer->buffer);
 	libusb_free_transfer(xfer);
@@ -160,6 +167,13 @@ usb_write(uint8_t *data, size_t datalen)
 {
 	struct libusb_transfer *xfer;
 	unsigned char *buf;
+	int i;
+	
+	DUMP_d(datalen);
+	for (i = 0; i < datalen; i += 1) {
+		fprintf(stderr, "  %02x", data[i]);
+	}
+	fprintf(stderr, "\n");
 	
 	writes_pending += 1;
 	xfer = libusb_alloc_transfer(0);
