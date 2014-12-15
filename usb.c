@@ -156,7 +156,9 @@ usb_check_fds(fd_set *rfds, fd_set *wfds)
 void
 usb_write_done(struct libusb_transfer *xfer)
 {
-	DUMP_d(xfer->status);
+	if (xfer->status) {
+		warn("USB Write status %d", xfer->status);
+	}
 	writes_pending -= 1;
 	free(xfer->buffer);
 	libusb_free_transfer(xfer);
@@ -167,14 +169,7 @@ usb_write(uint8_t *data, size_t datalen)
 {
 	struct libusb_transfer *xfer;
 	unsigned char *buf;
-	int i;
-	
-	DUMP_d(datalen);
-	for (i = 0; i < datalen; i += 1) {
-		fprintf(stderr, "  %02x", data[i]);
-	}
-	fprintf(stderr, "\n");
-	
+		
 	writes_pending += 1;
 	xfer = libusb_alloc_transfer(0);
 	buf = (unsigned char *)malloc(datalen);

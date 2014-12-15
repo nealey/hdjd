@@ -9,7 +9,7 @@
 #ifdef NODUMP
 #  define DUMPf(fmt, args...)
 #else
-#  define DUMPf(fmt, args...) fprintf(stderr, "%s:%s:%d " fmt "\n", __FILE__, __FUNCTION__, __LINE__, ##args)
+#  define DUMPf(fmt, args...) fprintf(stderr, "%s:%d " fmt "\n", __FILE__,  __LINE__, ##args)
 #endif
 #define DUMP() DUMPf("")
 #define DUMP_d(v) DUMPf("%s = %d", #v, (int)v)

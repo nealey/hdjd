@@ -73,9 +73,10 @@ alsa_fd_setup(int *nfds, fd_set *rfds, fd_set *wfds)
 void
 alsa_read_ready()
 {
-	static snd_seq_event_t *ev;
-
+	snd_midi_event_init(midi_event_parser);
+	
 	for (;;) {
+		snd_seq_event_t *ev;
 		unsigned char buf[ALSA_BUFSIZE];
 		long converted;
 		int r;
@@ -83,19 +84,34 @@ alsa_read_ready()
 		r = snd_seq_event_input(snd_handle, &ev);
 		
 		if (r == -EAGAIN) {
+			// input queue empty
 			break;
-		}
-		if (r == -ENOSPC) {
-			warn("Out of space on input queue");
+		} else if (r == -ENOSPC) {
+			warn("Input queue overflow");
+			continue;
+		} else if (r < 0) {
+			warn("snd_seq_event_input() = %d", r);
+			continue;
 		}
 
 		converted = snd_midi_event_decode(midi_event_parser, buf, ALSA_BUFSIZE, ev);
 		if (converted < 0) {
-			warn("Can't decode MIDI event type %d", ev->type);
-		} else {
-			DUMP_d(converted);
-			usb_write(buf, converted);
+			warn("Can't decode MIDI event type %x", ev->type);
+			continue;
 		}
+		
+		if (converted < 3) {
+			int i;
+			
+			warn("Uh oh, weird MIDI packet with length %ld (does this make sense if prefixed with 90?)", converted);
+			
+			for (i = 0; i < converted; i += 1) {
+				fprintf(stderr, "  %02x", buf[i]);
+			}
+			fprintf(stderr, "\n");
+		}
+		
+		usb_write(buf, converted);
 	}
 }
 
@@ -118,6 +134,8 @@ void
 alsa_write(uint8_t *data, size_t datalen)
 {
 	size_t offset = 0;
+	
+	snd_midi_event_init(midi_event_parser);
 	
 	for (; datalen > offset;) {
 		snd_seq_event_t ev;
