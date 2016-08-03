@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <libusb.h>
 #include <string.h>
@@ -29,6 +30,7 @@ const struct device devices[] = {
 	{"Steel", 0xb102, 0x83, 0x04},
 	{"MP3e2", 0xb105, 0x82, 0x03},
 	{"4Set", 0xb10c, 0x84, 0x02},
+	{"4-MX", 0xb109, 0x82, 0x03},
 	{0, 0, 0, 0}
 };
 
@@ -70,7 +72,7 @@ main(int argc, char **argv)
 		}
 
 		if (ret < 0) {
-			printf("Can't figure out what to call this thing.\n");
+			printf("%s: can't figure out what to call this thing.\n", libusb_error_name(ret));
 			return 69;
 		}
 	}
