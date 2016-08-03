@@ -25,7 +25,7 @@ struct device {
 const struct device devices[] = {
 	{ 0xb102, 1, 0x83, 0x04 }, // Steel
 	{ 0xb105, 1, 0x82, 0x03 }, // MP3e2
-	{ 0xb109, 4, 0x82, 0x03 }, // 4-MX
+	{ 0xb109, 0, 0x84, 0x01 }, // 4-MX
 	{ 0, 0, 0, 0 }
 };
 
