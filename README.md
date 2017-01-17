@@ -41,6 +41,11 @@ Things I won't support:
 If you have a Hercules device that doesn't "just work" with Mixxx,
 send me an email, there's a good chance I can support it with this driver.
 
+How To Get
+----------
+
+Check the [Github Project](https://github.com/nealey/hdjd) for the canonical source repo.
+
 
 How To Run
 ----------
