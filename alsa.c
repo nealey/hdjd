@@ -7,12 +7,20 @@
 #include "log.h"
 #include "dump.h"
 
-static snd_seq_t *snd_handle;
-static int seq_port;
-static snd_midi_event_t *midi_event_parser;
-
 #define ALSA_BUFSIZE 4096
+#define MAX_PFDS 20
 
+static snd_seq_t *snd_handle = NULL;
+static int seq_port;
+static snd_midi_event_t *midi_event_parser = NULL;
+
+int npfd;
+struct pollfd pfd[MAX_PFDS];
+
+void alsa_interrupting()
+{
+    //Currently nothing to do.
+}
 
 int
 alsa_setup(const char *name)
@@ -31,21 +39,24 @@ alsa_setup(const char *name)
 	// Allocate parser object for converting to and from MIDI
 	if (snd_midi_event_new(ALSA_BUFSIZE, &midi_event_parser) < 0) {
 		fatal("ALSA cannot allocate MIDI event parser");
-	}
-
-	return 0;
+        return -1;
+	} else {
+        snd_midi_event_no_status(midi_event_parser,1);
+        return 0;
+    }
 }
 
 void
 alsa_close()
 {
-	snd_midi_event_free(midi_event_parser);
+    if (midi_event_parser) {
+        snd_midi_event_free(midi_event_parser);
+    }
+    if (snd_handle) {
+        snd_seq_close(snd_handle);
+    }
 }
 
-
-#define MAX_PFDS 20
-int npfd;
-struct pollfd pfd[MAX_PFDS];
 
 void
 alsa_fd_setup(int *nfds, fd_set *rfds, fd_set *wfds)
@@ -66,8 +77,6 @@ alsa_fd_setup(int *nfds, fd_set *rfds, fd_set *wfds)
 			FD_SET(pfd[i].fd, rfds);
 		}
 	}
-	
-
 }
 
 void
@@ -93,10 +102,36 @@ alsa_read_ready()
 			warn("snd_seq_event_input() = %d", r);
 			continue;
 		}
-
+        
 		converted = snd_midi_event_decode(midi_event_parser, buf, ALSA_BUFSIZE, ev);
 		if (converted < 0) {
-			warn("Can't decode MIDI event type %x", ev->type);
+            if (ev->type == SND_SEQ_EVENT_CLIENT_START ) {
+                printf("Client started \n");
+                continue;
+            } else if (ev->type == SND_SEQ_EVENT_CLIENT_EXIT) {
+                printf("Client exited \n");
+                continue;
+            } else if (ev->type == SND_SEQ_EVENT_CLIENT_CHANGE) {
+                printf("Client status/info changed \n");
+                continue;
+            } else if (ev->type == SND_SEQ_EVENT_PORT_START) {
+                printf("Port created \n");
+                continue;
+            } else if (ev->type == SND_SEQ_EVENT_PORT_EXIT) {
+                printf("Port deleted \n");
+                continue;
+            } else if (ev->type == SND_SEQ_EVENT_PORT_CHANGE) {
+                printf("Port status/info changed \n");
+                continue;
+            } else if (ev->type == SND_SEQ_EVENT_PORT_SUBSCRIBED) {
+                printf("Port connected \n");
+                continue;
+            } else if (ev->type == SND_SEQ_EVENT_PORT_UNSUBSCRIBED) {
+                printf("Port disconnected \n");
+                continue;
+            } else {
+                warn("Can't decode MIDI event type 0x%02x", ev->type);
+            }
 			continue;
 		}
 		
@@ -137,7 +172,7 @@ alsa_write(uint8_t *data, size_t datalen)
 	
 	snd_midi_event_init(midi_event_parser);
 	
-	for (; datalen > offset;) {
+	while( datalen > offset) {
 		snd_seq_event_t ev;
 		long encoded;
 		int r;
@@ -146,9 +181,9 @@ alsa_write(uint8_t *data, size_t datalen)
 		if (encoded <= 1) {
 			int i;
 	
-			warn("Unable to encode MIDI message (%ld < %ld)", encoded, datalen);
+			warn("Unable to encode MIDI message (%ld < %ld)", encoded, (long int)datalen);
 			fprintf(stderr, "    ");
-			for (i = offset; i < datalen; i += 1) {
+			for (i = offset; i < (long int)datalen; i += 1) {
 				fprintf(stderr, "%02x ", data[i]);
 			}
 			fprintf(stderr, "\n");

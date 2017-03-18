@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/select.h>
@@ -5,21 +6,33 @@
 #include "usb.h"
 #include "dump.h"
 
+
+static volatile int keepRunning = 1;
+
+void intHandler(int dummy) {
+    keepRunning = 0;
+    usb_interrupting();
+    alsa_interrupting();
+}
+
 int
 setup()
 {
 	char name[100];
 	
 	if (usb_setup(name, sizeof(name)) < 0) {
+        usb_finish();
 		return -1;
 	}
 	
 	if (alsa_setup(name) < 0) {
+        alsa_close();
 		return -1;
 	}
 	
 	return 0;
 }
+
 
 int
 main(int argc, char *argv[])
@@ -27,8 +40,8 @@ main(int argc, char *argv[])
 	if (setup() < 0) {
 		return 69;
 	}
-	
-	for (;;) {
+    signal(SIGINT, intHandler);
+	while (keepRunning) {
 		fd_set rfds;
 		fd_set wfds;
 		int nfds = 0;
@@ -47,9 +60,10 @@ main(int argc, char *argv[])
 		
 		alsa_check_fds(&rfds, &wfds);
 		usb_check_fds(&rfds, &wfds);
-
-		//DUMP();
 	}
+    printf("Exiting...\n");
+    usb_finish();
+    alsa_close();
 
 	return 0;
 }
