@@ -24,6 +24,7 @@ The driver currently supports:
 
 * Hercules DJ Control MP3 e2
 * Hercules DJ Control Steel
+* Hercules DJ Console 4-Mx
 
 Support is planned for:
 
@@ -34,12 +35,11 @@ Things I won't support:
 * Hercules DJ 4Set (the one Guillemot sent me doesn't even work in Windows)
 * Hercules Console Mk2 (already works with HID code in Mixxx)
 * Hercules RMX (already works with HID code in Mixxx)
-* Hercules DJ Control Instinct (already works with Midi code in Mixxx,
-  although I *will* be contributing a mapping for it)
 
 
 If you have a Hercules device that doesn't "just work" with Mixxx,
-send me an email, there's a good chance I can support it with this driver.
+send me an email, there's a chance I can support it with this driver.
+
 
 How To Get
 ----------
@@ -83,6 +83,11 @@ a whole bunch of controllers so I could make a better driver.
 
 Thanks to the Mixxx project for connecting me with Guillemot,
 and for providing something interesting to use this driver ;-)
+
+JosepMaJAZ contributed support for 4-Mx,
+and found a bug having to do with controller messages not getting read.
+This greatly improved stability.
+
 
 Contact Me
 ----------
