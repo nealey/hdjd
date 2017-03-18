@@ -60,12 +60,11 @@ Just run `hdjd` and it will tell you what it found.
 Current Issues
 --------------
 
-The driver is pretty crappy right now.
-If you email me, I'm a lot more likely to fix things.
-Even if you just say "hi, I'm using your Hercules driver".
+Recent versions of Mixxx may not be setting up the USB system correctly,
+resulting in your disk running out of space because
+`syslog` and the kernel log have millions of messages.
+If this happens, make sure to disable the "USB Device" for your controller in Mixxx.
 
-* Driver must be launched after device is plugged in
-* It locks up and crashes sometimes
 
 If you find a problem, please, please, pretty-please,
 email me <neale@woozle.org>.
