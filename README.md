@@ -83,9 +83,10 @@ a whole bunch of controllers so I could make a better driver.
 Thanks to the Mixxx project for connecting me with Guillemot,
 and for providing something interesting to use this driver ;-)
 
-JosepMaJAZ contributed support for 4-Mx,
-and found a bug having to do with controller messages not getting read.
-This greatly improved stability.
+Thanks to JosepMaJAZ for many stability improvements,
+code cleanup,
+better error checking,
+and testing against the 4-Mx.
 
 
 Contact Me
