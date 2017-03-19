@@ -98,7 +98,7 @@ usb_initiate_transfer_additional()
   libusb_submit_transfer(xfer_in2);
 }
 
-void
+void LIBUSB_CALL
 usb_xfer_done(struct libusb_transfer *xfer)
 {
   uint8_t *data = xfer->buffer;
@@ -108,15 +108,16 @@ usb_xfer_done(struct libusb_transfer *xfer)
     usb_debug_msg("Receiving", dev_info->ep_in, data, datalen);
     alsa_write(data, datalen);
   }
-  free(data);
-  libusb_free_transfer(xfer);
   if ( xfer->status == LIBUSB_TRANSFER_COMPLETED ) {
     usb_initiate_transfer();
   } else if ( xfer->status != LIBUSB_TRANSFER_CANCELLED ) {
     fatal("Stopping EP_IN, because of status %d.\nSoftware needs restarting", xfer->status);
   }
+
+  free(data);
+  libusb_free_transfer(xfer);
 }
-void
+void LIBUSB_CALL
 usb_xfer_done_additional(struct libusb_transfer *xfer)
 {
   if ( xfer->status == LIBUSB_TRANSFER_COMPLETED ) {
@@ -313,7 +314,7 @@ usb_check_fds(fd_set *rfds, fd_set *wfds)
 }
 
 
-void
+void LIBUSB_CALL
 usb_write_done(struct libusb_transfer *xfer)
 {
   if ( xfer->status == LIBUSB_TRANSFER_TIMED_OUT ) {
