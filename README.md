@@ -24,6 +24,7 @@ The driver currently supports:
 
 * Hercules DJ Control MP3 e2
 * Hercules DJ Control Steel
+* Hercules DJ Console 4-Mx
 
 Support is planned for:
 
@@ -34,12 +35,11 @@ Things I won't support:
 * Hercules DJ 4Set (the one Guillemot sent me doesn't even work in Windows)
 * Hercules Console Mk2 (already works with HID code in Mixxx)
 * Hercules RMX (already works with HID code in Mixxx)
-* Hercules DJ Control Instinct (already works with Midi code in Mixxx,
-  although I *will* be contributing a mapping for it)
 
 
 If you have a Hercules device that doesn't "just work" with Mixxx,
-send me an email, there's a good chance I can support it with this driver.
+send me an email, there's a chance I can support it with this driver.
+
 
 How To Get
 ----------
@@ -60,12 +60,11 @@ Just run `hdjd` and it will tell you what it found.
 Current Issues
 --------------
 
-The driver is pretty crappy right now.
-If you email me, I'm a lot more likely to fix things.
-Even if you just say "hi, I'm using your Hercules driver".
+Recent versions of Mixxx may not be setting up the USB system correctly,
+resulting in your disk running out of space because
+`syslog` and the kernel log have millions of messages.
+If this happens, make sure to disable the "USB Device" for your controller in Mixxx.
 
-* Driver must be launched after device is plugged in
-* It locks up and crashes sometimes
 
 If you find a problem, please, please, pretty-please,
 email me <neale@woozle.org>.
@@ -89,6 +88,12 @@ a whole bunch of controllers so I could make a better driver.
 
 Thanks to the Mixxx project for connecting me with Guillemot,
 and for providing something interesting to use this driver ;-)
+
+Thanks to JosepMaJAZ for many stability improvements,
+code cleanup,
+better error checking,
+and testing against the 4-Mx.
+
 
 Contact Me
 ----------
