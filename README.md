@@ -75,6 +75,12 @@ but I don't check the forums very often.
 Sorry.
 
 
+License
+-------
+
+[MIT](LICENSE.md)
+
+
 Thanks
 ------
 
