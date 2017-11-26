@@ -55,7 +55,7 @@ How To Run
 Currently, the driver must be started after you plug in a device.
 
 If you haven't done so, build it by typing `make` under the source dir.
-Then, just run `hdjd` and it will tell you what it found.
+Then, just run it by typing `./hdjd` and it will tell you what it found.
 
 Also make sure your user can read and write to raw USB devices.
 See [this Mixxx wiki page](https://mixxx.org/wiki/doku.php/troubleshooting#hid_and_usb_bulk_controllers_on_gnu_linux) for how to do this with udev-based systems (almost every Linux distribution).
