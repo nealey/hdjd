@@ -25,10 +25,12 @@ The driver currently supports:
 * Hercules DJ Control MP3 e2
 * Hercules DJ Control Steel
 * Hercules DJ Console 4-Mx
+* Hercules Console Mk4
 
-Support is planned for:
+Untested support :
 
-* Hercules Console Mk4 (if I can find one cheap enough)
+* Hercules DJ Control MP3 LE / Glow
+* Hercules DJ Control Mk2 (See comment in the next section)
 
 Things I won't support:
 
@@ -50,11 +52,19 @@ Check the [Github Project](https://github.com/nealey/hdjd) for the canonical sou
 How To Run
 ----------
 
-Also make sure your user can read and write to raw USB devices.
-See [this Mixxx wiki page](http://mixxx.org/wiki/doku.php/hercules_dj_control_mp3_e2#usb_hid) for how to do this with udev-based systems (almost every Linux distribution).
-
 Currently, the driver must be started after you plug in a device.
-Just run `hdjd` and it will tell you what it found.
+
+If you haven't done so, build it by typing `make` under the source dir.
+Then, just run `hdjd` and it will tell you what it found.
+
+Also make sure your user can read and write to raw USB devices.
+See [this Mixxx wiki page](https://mixxx.org/wiki/doku.php/troubleshooting#hid_and_usb_bulk_controllers_on_gnu_linux) for how to do this with udev-based systems (almost every Linux distribution).
+
+
+If you are trying to add support for another controller and try to debug the messages sent and received, you can build 
+it in debug mode if you modify the file Makefile and uncomment the following line:
+ - #CFLAGS += -g -DDEBUG
+(i.e. remove the # sign)
 
 
 Current Issues
