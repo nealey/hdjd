@@ -30,7 +30,7 @@ The driver currently supports:
 Untested support :
 
 * Hercules DJ Control MP3 LE / Glow
-* Hercules DJ Control Mk2 (See comment in the next section)
+* Hercules Console Mk2 (See comment in the next section)
 
 Things I won't support:
 
