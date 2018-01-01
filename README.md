@@ -62,11 +62,10 @@ See [this Mixxx wiki page](https://mixxx.org/wiki/doku.php/troubleshooting#hid_a
 
 
 If you are trying to add support for another controller and try to debug the messages sent and received, you can build 
-it in debug mode if you modify the file Makefile and uncomment the following line:
+it in debug mode
+by providing `make` the `DEBUG=1` option:
 
-`#CFLAGS += -g -DDEBUG`
- 
-(i.e. remove the # sign)
+    $ make clean all DEBUG=1
 
 
 Current Issues

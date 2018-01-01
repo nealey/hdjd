@@ -1,7 +1,10 @@
 CFLAGS += -Wall
 CFLAGS += -Werror
 TARGETS = hdjd explore
-#CFLAGS += -g -DDEBUG
+
+ifdef DEBUG
+CFLAGS += -g -DDEBUG
+endif
 
 all: $(TARGETS)
 
