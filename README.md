@@ -26,15 +26,15 @@ The driver currently supports:
 * Hercules DJ Control Steel
 * Hercules DJ Console 4-Mx
 * Hercules Console Mk4
+* Hercules DJ 4Set (thanks watchingJu!)
 
-Untested support :
+Things that are reported to work but I can't test:
 
 * Hercules DJ Control MP3 LE / Glow
 * Hercules Console Mk2 (See comment in the next section)
 
 Things I won't support:
 
-* Hercules DJ 4Set (the one Guillemot sent me doesn't even work in Windows)
 * Hercules Console Mk2 (already works with HID code in Mixxx)
 * Hercules RMX (already works with HID code in Mixxx)
 
