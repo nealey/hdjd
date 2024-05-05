@@ -49,6 +49,23 @@ How To Get
 Check the [Github Project](https://github.com/nealey/hdjd) for the canonical source repo.
 
 
+How to Build
+------------
+
+Install Dependencies:
+
+* Debian / Ubuntu
+
+ apt-get install libusb-1.0.0-dev libasound2-dev
+
+* Rocky / CentOS:
+
+ yum install libusb-devel alsa-lib-devel
+
+Build hddj:
+
+ make
+
 How To Run
 ----------
 
