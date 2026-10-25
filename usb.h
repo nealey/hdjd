@@ -10,5 +10,6 @@ void usb_interrupting();
 void usb_fd_setup(int *nfds, fd_set *rfds, fd_set *wfds);
 void usb_check_fds(fd_set *rfds, fd_set *wfds);
 void usb_write(uint8_t *data, size_t datalen);
+void hercules_4mx_set_phono();
 
 #endif

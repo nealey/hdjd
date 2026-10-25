@@ -1,13 +1,17 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <sys/select.h>
+#include <sysexits.h>
+#include <unistd.h>
 #include "alsa.h"
 #include "usb.h"
 #include "dump.h"
 
 
 static volatile int keepRunning = 1;
+bool enablePhono = false;
 
 void intHandler(int dummy) {
     keepRunning = 0;
@@ -19,7 +23,7 @@ int
 setup()
 {
 	char name[100];
-	
+
 	if (usb_setup(name, sizeof(name)) < 0) {
         usb_finish();
 		return -1;
@@ -37,10 +41,29 @@ setup()
 int
 main(int argc, char *argv[])
 {
+	int opt;
+	while ((opt = getopt(argc, argv, "p")) != -1) {
+		switch (opt) {
+		case 'p':
+			enablePhono = true;
+			break;
+		default:
+			printf("Usage: %s [-p]\n", argv[0]);
+			printf("\n");
+			printf("-p	Inputs 1-2 to phono levels on 4-MX\n");
+			return EX_USAGE;
+		}
+	}
+
 	if (setup() < 0) {
 		return 69;
 	}
-    signal(SIGINT, intHandler);
+
+	if (enablePhono) {
+		hercules_4mx_set_phono();
+	}
+
+	signal(SIGINT, intHandler);
 	while (keepRunning) {
 		fd_set rfds;
 		fd_set wfds;

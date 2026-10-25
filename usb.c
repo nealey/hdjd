@@ -119,6 +119,8 @@ usb_xfer_done(struct libusb_transfer *xfer)
   free(data);
   libusb_free_transfer(xfer);
 }
+
+  
 void LIBUSB_CALL
 usb_xfer_done_additional(struct libusb_transfer *xfer)
 {
@@ -136,6 +138,19 @@ usb_xfer_done_additional(struct libusb_transfer *xfer)
 
   free(xfer->buffer);
   libusb_free_transfer(xfer);
+}
+
+void
+hercules_4mx_set_phono() {
+  int ret;
+  // bmRequestType: 0x40, bRequest: 5, wValue: 0x0003, wIndex: 0
+  ret = libusb_control_transfer(usb_dev, 0x40, 5, 0x0003, 0, NULL, 0, 1000);
+
+  if (ret < 0) {
+    warn("4-Mx: Failed to set Phono mode: %s", libusb_error_name(ret));
+  } else {
+    printf("4-Mx: Hardware switched to Phono input mode.\n");
+  }
 }
 
 int
